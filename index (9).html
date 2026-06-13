@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HTML Fetcher</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif;
+    background: #000;
+    color: #fff;
+    min-height: 100vh;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeIn 0.8s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .container {
+    max-width: 1100px;
+    width: 100%;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 3.5rem;
+    font-weight: 700;
+    letter-spacing: -2px;
+    margin-bottom: 12px;
+    background: linear-gradient(180deg, #fff 0%, #aaa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: slideDown 0.6s ease-out;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #888;
+    margin-bottom: 50px;
+    font-size: 1.15rem;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    animation: fadeIn 1s ease-out 0.2s backwards;
+  }
+
+  .input-group {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    animation: fadeIn 1s ease-out 0.3s backwards;
+  }
+
+  input[type="url"] {
+    flex: 1;
+    min-width: 280px;
+    padding: 18px 24px;
+    border-radius: 12px;
+    border: 1px solid #333;
+    background: #0a0a0a;
+    color: #fff;
+    font-size: 1.05rem;
+    outline: none;
+    transition: all 0.3s ease;
+  }
+
+  input[type="url"]:focus {
+    border-color: #fff;
+    background: #111;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.05);
+  }
+
+  input[type="url"]::placeholder { color: #555; }
+
+  button {
+    padding: 18px 32px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1.05rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  button:hover::before {
+    width: 300px;
+    height: 300px;
+  }
+
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  #fetchBtn {
+    background: #fff;
+    color: #000;
+  }
+
+  #fetchBtn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 40px rgba(255, 255, 255, 0.2);
+  }
+
+  #fetchBtn:active:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  #copyBtn {
+    background: #fff;
+    color: #000;
+  }
+
+  #copyBtn:hover:not(:disabled) {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 40px rgba(255, 255, 255, 0.2);
+  }
+
+  #copyBtn:active:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .meta {
+    color: #888;
+    font-size: 0.9rem;
+    font-weight: 400;
+  }
+
+  .meta span {
+    color: #fff;
+    font-weight: 500;
+  }
+
+  .status {
+    text-align: center;
+    padding: 20px;
+    font-size: 1rem;
+    min-height: 120px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .status.error {
+    color: #ff4444;
+    animation: shake 0.5s ease-out;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+
+  .status.loading { color: #fff; }
+
+  .loader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+  }
+
+  .loader {
+    position: relative;
+    width: 80px;
+    height: 80px;
+  }
+
+  .loader-ring {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border: 3px solid transparent;
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  }
+
+  .loader-ring:nth-child(1) {
+    animation-delay: -0.45s;
+    border-top-color: rgba(255, 255, 255, 0.8);
+  }
+
+  .loader-ring:nth-child(2) {
+    animation-delay: -0.3s;
+    border-top-color: rgba(255, 255, 255, 0.5);
+    width: 60px;
+    height: 60px;
+    top: 10px;
+    left: 10px;
+  }
+
+  .loader-ring:nth-child(3) {
+    animation-delay: -0.15s;
+    border-top-color: rgba(255, 255, 255, 0.3);
+    width: 40px;
+    height: 40px;
+    top: 20px;
+    left: 20px;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .loader-dots {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .loader-dot {
+    width: 8px;
+    height: 8px;
+    background: #fff;
+    border-radius: 50%;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  .loader-dot:nth-child(1) { animation-delay: -0.32s; }
+  .loader-dot:nth-child(2) { animation-delay: -0.16s; }
+  .loader-dot:nth-child(3) { animation-delay: 0s; }
+
+  @keyframes pulse {
+    0%, 80%, 100% {
+      transform: scale(0.6);
+      opacity: 0.3;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .loader-message {
+    font-size: 1.1rem;
+    color: #888;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    animation: fadeInOut 2s ease-in-out infinite;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  @keyframes fadeInOut {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .code-wrapper {
+    position: relative;
+    background: #0a0a0a;
+    border: 1px solid #222;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    animation: fadeIn 0.6s ease-out;
+  }
+
+  pre {
+    padding: 28px;
+    overflow: auto;
+    max-height: 650px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: #e8e8e8;
+    white-space: pre;
+    tab-size: 2;
+  }
+
+  pre::-webkit-scrollbar { width: 12px; height: 12px; }
+  pre::-webkit-scrollbar-track { background: #0a0a0a; }
+  pre::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 6px;
+    border: 3px solid #0a0a0a;
+  }
+  pre::-webkit-scrollbar-thumb:hover { background: #555; }
+
+  .hidden { display: none; }
+
+  .toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #fff;
+    color: #000;
+    padding: 16px 32px;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(255, 255, 255, 0.15);
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 9999;
+    font-weight: 500;
+  }
+
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  .creator-section {
+    margin-top: 80px;
+    padding: 40px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    animation: fadeIn 1s ease-out;
+  }
+
+  .creator-text {
+    font-size: 0.95rem;
+    color: #666;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+  }
+
+  .creator-text strong {
+    color: #fff;
+    font-weight: 500;
+  }
+
+  .social-links {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .social-links a {
+    color: #888;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .social-links a:hover {
+    color: #fff;
+    transform: translateY(-2px);
+  }
+
+  .social-links svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 30px 16px; }
+    h1 { font-size: 2.2rem; letter-spacing: -1px; }
+    .subtitle { font-size: 1rem; margin-bottom: 35px; }
+    input[type="url"], button { width: 100%; }
+    pre { padding: 20px; font-size: 0.82rem; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>HTML Fetcher</h1>
+    <p class="subtitle">Extract browser-side HTML from any website</p>
+
+    <div class="input-group">
+      <input
+        type="url"
+        id="urlInput"
+        placeholder="https://example.com"
+        value="https://example.com"
+      />
+      <button id="fetchBtn">Fetch HTML</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div id="outputSection" class="hidden">
+      <div class="actions">
+        <div class="meta">
+          Source: <span id="sourceUrl"></span> · Size: <span id="htmlSize"></span>
+        </div>
+        <button id="copyBtn">Copy HTML</button>
+      </div>
+
+      <div class="code-wrapper">
+        <pre><code id="htmlOutput"></code></pre>
+      </div>
+    </div>
+
+    <div class="creator-section">
+      <div class="creator-text">
+        Created By <strong>Dhrubo!</strong>
+      </div>
+      <div class="social-links">
+        <a href="https://www.facebook.com/share/1LLhAmRUp2/" target="_blank" rel="noopener" aria-label="Facebook">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        </a>
+        <a href="https://www.instagram.com/dhrubo_morse?igsh=aHNsazZyOTY4dWN2" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">HTML copied to clipboard</div>
+
+<script>
+  const urlInput = document.getElementById('urlInput');
+  const fetchBtn = document.getElementById('fetchBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const htmlOutput = document.getElementById('htmlOutput');
+  const outputSection = document.getElementById('outputSection');
+  const sourceUrl = document.getElementById('sourceUrl');
+  const htmlSize = document.getElementById('htmlSize');
+  const statusEl = document.getElementById('status');
+  const toast = document.getElementById('toast');
+
+  const PROXIES = [
+    (u) => `/.netlify/functions/proxy?url=${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+    (u) => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,
+  ];
+
+  const loadingMessages = [
+    "fetching the code. wait a bit homie",
+    "hacking the mainframe... just kidding",
+    "grabbing that sweet html",
+    "almost there, promise",
+    "patience, young padawan",
+    "downloading the internet, one page at a time",
+    "working my magic",
+    "connecting to the matrix",
+    "getting your html right now",
+    "ahhh that one is too big, hold on",
+    "parsing packets like a pro",
+    "shhhh... the server is responding",
+    "decoding the digital universe",
+    "rendering bits and bytes",
+    "snatching the source code",
+    "pulling the curtain back",
+    "this one is a hefty boy",
+    "wait... this is a big one",
+    "yo that is massive, give me a sec",
+    "extracting the good stuff",
+    "peeling back the layers",
+    "the html gods are pleased",
+    "streaming raw data",
+    "hold up, almost got it",
+    "sifting through the markup",
+    "compiling the web's secrets",
+    "one more second... trust me",
+    "this is giving main character energy"
+  ];
+
+  let currentMessageIndex = 0;
+  let messageInterval = null;
+
+  function setStatus(message, type = '') {
+    statusEl.className = 'status' + (type ? ' ' + type : '');
+    
+    if (type === 'loading') {
+      currentMessageIndex = 0;
+      const shuffled = [...loadingMessages].sort(() => Math.random() - 0.5);
+      const loaderHTML = `
+        <div class="loader-container">
+          <div class="loader">
+            <div class="loader-ring"></div>
+            <div class="loader-ring"></div>
+            <div class="loader-ring"></div>
+          </div>
+          <div class="loader-dots">
+            <div class="loader-dot"></div>
+            <div class="loader-dot"></div>
+            <div class="loader-dot"></div>
+          </div>
+          <div class="loader-message" id="loadingMessage">${shuffled[0]}</div>
+        </div>
+      `;
+      statusEl.innerHTML = loaderHTML;
+      
+      messageInterval = setInterval(() => {
+        currentMessageIndex = (currentMessageIndex + 1) % shuffled.length;
+        const messageEl = document.getElementById('loadingMessage');
+        if (messageEl) {
+          messageEl.style.opacity = '0';
+          setTimeout(() => {
+            messageEl.textContent = shuffled[currentMessageIndex];
+            messageEl.style.opacity = '1';
+          }, 200);
+        }
+      }, 1800);
+    } else {
+      if (messageInterval) {
+        clearInterval(messageInterval);
+        messageInterval = null;
+      }
+      statusEl.textContent = message;
+    }
+  }
+
+  function clearStatus() {
+    if (messageInterval) {
+      clearInterval(messageInterval);
+      messageInterval = null;
+    }
+    statusEl.textContent = '';
+    statusEl.className = 'status';
+  }
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / 1048576).toFixed(2) + ' MB';
+  }
+
+  async function fetchHtml(url) {
+    const fetchWithTimeout = async (proxyUrl, timeout = 7000) => {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeout);
+      try {
+        const response = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        let text = await response.text();
+        try {
+          const data = JSON.parse(text);
+          if (data.contents) text = data.contents;
+        } catch (e) {}
+        return text;
+      } catch (err) {
+        clearTimeout(timer);
+        throw err;
+      }
+    };
+
+    return new Promise((resolve, reject) => {
+      let resolved = false;
+      let failed = 0;
+
+      PROXIES.forEach(makeProxyUrl => {
+        fetchWithTimeout(makeProxyUrl(url))
+          .then(html => {
+            if (!resolved && html && html.trim().length > 50) {
+              resolved = true;
+              resolve(html);
+            }
+          })
+          .catch(() => {
+            failed++;
+            if (failed === PROXIES.length && !resolved) {
+              reject(new Error('All proxies failed'));
+            }
+          });
+      });
+    });
+  }
+
+  fetchBtn.addEventListener('click', async () => {
+    let url = urlInput.value.trim();
+    if (!url) {
+      setStatus('Please enter a URL.', 'error');
+      return;
+    }
+    if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+    fetchBtn.disabled = true;
+    copyBtn.disabled = true;
+    outputSection.classList.add('hidden');
+    setStatus('Fetching HTML...', 'loading');
+
+    try {
+      const html = await fetchHtml(url);
+      htmlOutput.textContent = html;
+      sourceUrl.textContent = url.length > 60 ? url.slice(0, 57) + '...' : url;
+      sourceUrl.title = url;
+      htmlSize.textContent = formatBytes(new Blob([html]).size);
+      outputSection.classList.remove('hidden');
+      clearStatus();
+      copyBtn.disabled = false;
+    } catch (err) {
+      console.error(err);
+      setStatus(
+        'Failed to fetch HTML. The site may block proxies or be unreachable.',
+        'error'
+      );
+      outputSection.classList.add('hidden');
+    } finally {
+      fetchBtn.disabled = false;
+    }
+  });
+
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') fetchBtn.click();
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    const text = htmlOutput.textContent;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      showToast('HTML copied to clipboard');
+    } catch (err) {
+      showToast('Failed to copy', true);
+    }
+  });
+
+  function showToast(message, isError = false) {
+    toast.textContent = message;
+    if (isError) {
+      toast.style.background = '#ff4444';
+      toast.style.color = '#fff';
+    } else {
+      toast.style.background = '#fff';
+      toast.style.color = '#000';
+    }
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>
+
